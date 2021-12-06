@@ -56,6 +56,13 @@
 #include <signal.h>
 #endif
 
+#include <iostream>
+using std::cerr;
+using std::endl;
+#include <fstream>
+using std::ofstream;
+#include <cstdlib> // for exit function
+
 //#include "../src/bsdfs/roughGGX.h"
 using XERCES_CPP_NAMESPACE::SAXParser;
 
@@ -490,15 +497,98 @@ vec3 sample_conductor(const vec3& wi, const float alpha_x, const float alpha_y, 
 
 int main(int argc, char **argv) {
 	cout << "Mitsuba Main\n";
-	vec3 incoming = vec3(1.0, 1.0, 1.0);
-	vec3 outgoing = vec3(1.0, 2.0, 3.0);
+	vec3 incoming = vec3(0.0, 2.f, 0.0);
+	vec3 outgoing = vec3(0.0, 0.0, 0.0);
 	float isotropic_roughness = 0.3;
-	Spectrum m_eta = Spectrum(0.f);
-	Spectrum m_k = m_eta;
-	Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 2);
+	Spectrum m_eta = Spectrum(1.f);
+	Spectrum m_k = Spectrum(0.5f);
+	Spectrum brdf2 = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 1);
+	Spectrum brdf6 = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 6);
+	
+	ofstream outdata; // outdata is like cin
 
-    cout << "\n";
-    cout << brdf.average();
+	outdata.open("C:\\Users\\russom\\Desktop\\Tesi\\mitsuba\\src\\mitsuba\\brdf_table.txt"); // opens the file
+	if (!outdata) { // file couldn't be opened
+		cerr << "Error: file could not be opened" << endl;
+		exit(1);
+	}
+
+	float ix;
+	float iy;
+	float iz;
+
+	float ox;
+	float oy;
+	float oz;
+	//varia per ogni componente di incoming e outgoing
+	for ( ix = 0.f; ix <= 1.f; ix += 0.25) {
+		for ( iy = 0.f; iy <= 1.f; iy += 0.25) {
+			for ( iz = 0.f; iz <= 1.f; iz += 0.25) {
+				for ( ox = 0.f; ox <= 1.f; ox += 0.25) {
+					for ( oy = 0.f; oy <= 1.f; oy += 0.25) {
+						for (oz = 0.f; oz <= 1.f; oz += 0.25) {
+							
+							
+							outdata << "Incoming: " << endl;
+							outdata << ix << endl;
+							outdata << "," << endl;
+							outdata << iy << endl;
+							outdata << "," << endl;
+							outdata << iz << endl;
+							outdata << " - " << endl;
+							outdata << "Outgoing: " << endl;
+							outdata << ox << endl;
+							outdata << "," << endl;
+							outdata << oy << endl;
+							outdata << "," << endl;
+							outdata << oz << endl;
+							outdata << "\n" << endl;
+						}
+						oz = 0.f;
+					}
+					oy = 0.f;
+				}
+				oz = 0.f;
+			}
+			iz = 0.f;
+		}
+		iy = 0.f;
+	}
+	outdata.close();
+			
+
+    /*
+	cout << "\n";
+    cout << brdf2.toString();
+	cout << "\n";  
+	cout << "\n";
+    cout << brdf6.toString();
+	cout << "\n";
+	
+	
+	float eps_xy = 0.002;
+	float eps_z = 0.002;
+	float count_x = 0;
+	float count_y = 0;
+	float count_z = 0;
+	int count = 0;
+	for (int i = 0; i < 10; i++)
+		for(int j = 0; j < 10; j++ )
+			for (int z = 0; z < 5; z++) {
+				cout << "\n";
+				cout << count_x;
+				cout << ",";
+				cout << count_y;
+				cout << ",";
+				cout << count_z;
+				cout << "\n";
+				count_x += eps_xy;
+				count_y += eps_xy;
+				count_z += eps_z;
+				count++;
+			}
+	cout << "Numero di ripetizioni: ";
+	cout << count;
 	cout << "\n";
 	/*
 	Spectrum output2 = output + Spectrum(1.f);
