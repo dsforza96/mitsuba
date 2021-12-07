@@ -497,23 +497,23 @@ vec3 sample_conductor(const vec3& wi, const float alpha_x, const float alpha_y, 
 
 int main(int argc, char **argv) {
 	cout << "Mitsuba Main\n";
-	float isotropic_roughness = 0.3;
+	float isotropic_roughness = 0.7f;
 	Spectrum m_eta = Spectrum(3.f);
 	Spectrum m_k = Spectrum(0.5f);
 	
-	ofstream outdata; // outdata is like cin
+	ofstream io_brdf; // io_brdf is like cin
 
-	outdata.open("brdf_table_test.txt"); // opens the file
-	if (!outdata) { // file couldn't be opened
+	io_brdf.open("io_table_test.txt"); // opens the file
+	if (!io_brdf) { // file couldn't be opened
 		cerr << "Error: file could not be opened" << endl;
 		cout << "NO";
 		exit(1);
 	}
 
-	ofstream outdata_io; // outdata is like cin
+	ofstream brdf_table; // io_brdf is like cin
 
-	outdata_io.open("io_table_test.txt"); // opens the file
-	if (!outdata) { // file couldn't be opened
+	brdf_table.open("brdf_test.txt"); // opens the file
+	if (!brdf_table) { // file couldn't be opened
 		cerr << "Error: file could not be opened" << endl;
 		cout << "NO";
 		exit(1);
@@ -534,27 +534,36 @@ int main(int argc, char **argv) {
 					for ( oy = -1.f; oy <= 1.f; oy += 0.25) {
 						for (oz = 0.f; oz <= 1.f; oz += 0.25) {
 							
-							outdata_io << "Incoming: (";
-							outdata_io << ix;
-							outdata_io << ",";
-							outdata_io << iy;
-							outdata_io << ",";
-							outdata_io << iz;
-							outdata_io << ") - ";
-							outdata_io << "Outgoing: (";
-							outdata_io << ox;
-							outdata_io << ",";
-							outdata_io << oy;
-							outdata_io << ",";
-							outdata_io << oz;
-							outdata_io << ")\n" << endl;
+							io_brdf << "Incoming: (";
+							io_brdf << ix;
+							io_brdf << ",";
+							io_brdf << iy;
+							io_brdf << ",";
+							io_brdf << iz;
+							io_brdf << ") - ";
+							io_brdf << "Outgoing: (";
+							io_brdf << ox;
+							io_brdf << ",";
+							io_brdf << oy;
+							io_brdf << ",";
+							io_brdf << oz;
+							io_brdf << ") ---> BRDF Value: ";
 							
 							vec3 incoming = vec3(ix, iy, iz);
 							vec3 outgoing = vec3(ox, oy, oz);
 							Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 5);
 							
-							outdata << brdf.toString();
-							outdata << "\n";
+							io_brdf << brdf.toString();
+							io_brdf << "\n";
+
+							brdf_table << brdf[0];
+							brdf_table << " ";
+							brdf_table << brdf[1];
+							brdf_table << " ";
+							brdf_table << brdf[2];
+
+							brdf_table << "\n";
+
 						}
 						oz = 0.f;
 					}
@@ -566,7 +575,7 @@ int main(int argc, char **argv) {
 		}
 		iy = 0.f;
 	}
-	outdata.close();
+	io_brdf.close();
 			
     /*
 	cout << "\n";
