@@ -63,7 +63,7 @@ using std::endl;
 using std::ofstream;
 #include <cstdlib> // for exit function
 #include <time.h>
-# define PI 3.14159265358979323846
+# define M_PI 3.14159265358979323846
 
 //#include "../src/bsdfs/roughGGX.h"
 using XERCES_CPP_NAMESPACE::SAXParser;
@@ -500,7 +500,7 @@ vec3 sample_conductor(const vec3& wi, const float alpha_x, const float alpha_y, 
 int main(int argc, char** argv) {
 	
 	//Modify this
-	int freedom_degrees = 4;
+	int freedom_degrees = 3;
 
 	const clock_t begin_time = clock();
 	cout << "Mitsuba is executing, please wait...\n";
@@ -510,16 +510,16 @@ int main(int argc, char** argv) {
 	Spectrum m_eta = Spectrum(0.f);
 	Spectrum m_k = Spectrum(1.f);
 
-	//Spherical Coordinates
+	//Spherical Coordinates, theta is parametrized by its cosine
 	float thetaIncoming;
-	float phiIncoming;
-	
 	float thetaOutgoing;
-	float phiOutgoing;
 
-	//File to write
-	ofstream io_spherical_to_cartesian; // Here it is written Incoming,Outgoing and BRDF
-	ofstream brdf_file;					// Here it is written the BRDF values only
+	float phi_incoming;
+	float phi_outgoing;
+
+	//File where to write
+	ofstream io_spherical_to_cartesian; 
+	ofstream brdf_file;
 
 
 	if (freedom_degrees == 4){
@@ -527,118 +527,110 @@ int main(int argc, char** argv) {
 		
 		cout << "4 Freedom Degrees" << endl;
 		
-		io_spherical_to_cartesian.open("Incoming_Outgoing_Brdf_Table_4_Degrees.txt"); 
+		io_spherical_to_cartesian.open("Incoming_Outgoing_Brdf_Table_4_Degrees.txt"); // opens the file
 		if (!io_spherical_to_cartesian) { // file couldn't be opened
 			cerr << "Error: file could not be opened" << endl;
 			cout << "NO";
 			exit(1);
 		}
-		
-		brdf_file.open("Brdf_Table_4_Degrees.txt"); 
+		/*
+		brdf_file.open("Brdf_Table_4_Degrees.txt"); // opens the file
 		if (!brdf_file) { // file couldn't be opened
 			cerr << "Error: file could not be opened" << endl;
 			cout << "NO";
 			exit(1);
 		}
-		
-		for (thetaIncoming = 0; thetaIncoming < PI; thetaIncoming += PI/32) {
-			for (phiIncoming = 0; phiIncoming < 2*PI; phiIncoming += 2*PI/32) {
-				for (thetaOutgoing = 0; thetaOutgoing < PI; thetaOutgoing += PI / 32) {
-					for (phiOutgoing = 0; phiOutgoing < 2 * PI; phiOutgoing += 2 * PI / 32) {
+		*/
+		for (mu_incoming = 0; mu_incoming < 1; mu_incoming += 0.03125) {
+			for (phi_incoming = 0; phi_incoming < 360; phi_incoming += 11.25) {
+				for (mu_outgoing = 0; mu_outgoing < 1; mu_outgoing += 0.03125) {
+					for (phi_outgoing = 0; phi_outgoing < 360; phi_outgoing += 11.25) {
 
-						float cosThetaIncoming = cos(thetaIncoming);
+						float cosThetaIncoming = mu_incoming;
 						float sinThetaIncoming = std::sqrt(1 - std::pow(cosThetaIncoming, 2));
 
-						float sinPhiIncoming = std::sin(phiIncoming);
-						float cosPhiIncoming = std::cos(phiIncoming);
+						float sinPhiIncoming = std::sin(phi_incoming);
+						float cosPhiIncoming = std::cos(phi_incoming);
 
-						float cosThetaOutgoing = cos(thetaOutgoing);
+						float cosThetaOutgoing = mu_outgoing;
 						float sinThetaOutgoing = std::sqrt(1 - std::pow(cosThetaOutgoing, 2));
 
-						float sinPhiOutgoing = std::sin(phiOutgoing);
-						float cosPhiOutgoing = std::cos(phiOutgoing);
+						float sinPhiOutgoing = std::sin(phi_outgoing);
+						float cosPhiOutgoing = std::cos(phi_outgoing);
 
 						vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
 						vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
 
-						//Debug for checking the correct Conversion to Cartesian Coordinates
-						
-						//io_spherical_to_cartesian << "Spherical_In:(1,Theta: " << thetaIncoming <<
-						//	", Phi: " << phiIncoming << ")";
+
 						io_spherical_to_cartesian << "Incoming: (" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") - ";
-						//io_spherical_to_cartesian << "Spherical_Out:(1,Theta: " << thetaOutgoing <<
-						//	", Phi: " << phiOutgoing << ")";
-						io_spherical_to_cartesian << "Outgoing: (" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")" << endl;
+						io_spherical_to_cartesian << "Outgoing: (" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")";
 
 						Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
 
-						io_spherical_to_cartesian << "-----> BRDF Value: " << brdf.toString() << endl<<endl;
-						brdf_file << brdf.toString() << endl;
+						io_spherical_to_cartesian << "-----> BRDF Value: " << brdf.toString() << endl;
+						//brdf_file << brdf.toString() << endl;
+
 					}
-					phiOutgoing = 0;
+					phi_outgoing = 0;
 				}
-				thetaOutgoing = 0;
+				mu_outgoing = 0;
 			}
-			phiIncoming = 0;
+			phi_incoming = 0;
 		}
 	}
 	else {
 		// 3 degrees
 		cout << "3 Freedom Degrees" << endl;
-		
+
 		io_spherical_to_cartesian.open("Incoming_Outgoing_Brdf_Table_3_Degrees.txt"); // opens the file
 		if (!io_spherical_to_cartesian) { // file couldn't be opened
 			cerr << "Error: file could not be opened" << endl;
 			cout << "NO";
 			exit(1);
 		}
-		
+		/*
 		brdf_file.open("Brdf_Table_3_Degrees.txt"); // opens the file
 		if (!brdf_file) { // file couldn't be opened
 			cerr << "Error: file could not be opened" << endl;
 			cout << "NO";
 			exit(1);
 		}
-		
-		for (thetaIncoming = 0; thetaIncoming < PI; thetaIncoming += PI/32) {
-			for (phiIncoming = 0; phiIncoming < 2*PI; phiIncoming += 2*PI/32) {
-				for (thetaOutgoing = 0; thetaOutgoing < PI; thetaOutgoing += PI / 32) {
-					
-					phiOutgoing = 0;
+		*/
+		for (mu_incoming = M_PI; mu_incoming < 1; mu_incoming += M_PI/32) {
+			for (phi_incoming = 0; phi_incoming < 2*M_PI; phi_incoming += M_PI/32) {
+				for (mu_outgoing = 0; mu_outgoing < 1; mu_outgoing += 0.03125) {
 
-					float cosThetaIncoming = cos(thetaIncoming);
+					phi_outgoing = 0;
+
+					float cosThetaIncoming = mu_incoming;
 					float sinThetaIncoming = std::sqrt(1 - std::pow(cosThetaIncoming, 2));
 
-					float sinPhiIncoming = std::sin(phiIncoming);
-					float cosPhiIncoming = std::cos(phiIncoming);
+					float sinPhiIncoming = std::sin(phi_incoming);
+					float cosPhiIncoming = std::cos(phi_incoming);
 
-					float cosThetaOutgoing = cos(thetaOutgoing);
+					float cosThetaOutgoing = mu_outgoing;
 					float sinThetaOutgoing = std::sqrt(1 - std::pow(cosThetaOutgoing, 2));
 
-					float sinPhiOutgoing = std::sin(phiOutgoing);
-					float cosPhiOutgoing = std::cos(phiOutgoing);
+					float sinPhiOutgoing = std::sin(phi_outgoing);
+					float cosPhiOutgoing = std::cos(phi_outgoing);
 
 					vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
 					vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
-					
-					//Debug for checking the correct Conversion to Cartesian Coordinates
 
-					//io_spherical_to_cartesian << "Spherical_In:(1,Theta: " << thetaIncoming <<
-					//	", Phi: " << phiIncoming << ")";
+					io_spherical_to_cartesian << "Spherical: ( 1 , Theta: " << std::acos(cosThetaIncoming) * (180.0 / 3.1415926535897932384) <<
+																", Phi: " << phi_incoming << ") ***** ";
+
 					io_spherical_to_cartesian << "Incoming: (" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") - ";
-					//io_spherical_to_cartesian << "Spherical_Out:(1,Theta: " << thetaOutgoing <<
-					//	", Phi: " << phiOutgoing << ")";
-					io_spherical_to_cartesian << "Outgoing: (" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")"<< endl;
+					io_spherical_to_cartesian << "Outgoing: (" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")";
 
 					Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
 
-					io_spherical_to_cartesian << "-----> BRDF Value: " << brdf.toString() << endl<<endl;
+					io_spherical_to_cartesian << "-----> BRDF Value: " << brdf.toString() << endl;
 					brdf_file << brdf.toString() << endl;
-					
 				}
-				thetaOutgoing = 0;
+				mu_outgoing = 0;
 			}
-			phiIncoming = 0;
+			phi_incoming = 0;
 		}
 	}
 

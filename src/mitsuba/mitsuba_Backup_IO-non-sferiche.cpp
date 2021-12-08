@@ -62,8 +62,6 @@ using std::endl;
 #include <fstream>
 using std::ofstream;
 #include <cstdlib> // for exit function
-#include <time.h>
-# define PI 3.14159265358979323846
 
 //#include "../src/bsdfs/roughGGX.h"
 using XERCES_CPP_NAMESPACE::SAXParser;
@@ -497,153 +495,131 @@ vec3 sample_conductor(const vec3& wi, const float alpha_x, const float alpha_y, 
 }
 
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
+	cout << "Mitsuba Main\n";
+	float isotropic_roughness = 0.7f;
+	Float values[] = { 3.f, 1.f, 2.f };
+	Spectrum m_eta = Spectrum(values);
+	//Spectrum m_eta = Spectrum(3.f);
+	Spectrum m_k = Spectrum(0.5f);
 	
-	//Modify this
-	int freedom_degrees = 4;
+	ofstream io_brdf; // io_brdf is like cin
 
-	const clock_t begin_time = clock();
-	cout << "Mitsuba is executing, please wait...\n";
-	
-	//BRDF Parameters
-	float isotropic_roughness = 0.2f;
-	Spectrum m_eta = Spectrum(0.f);
-	Spectrum m_k = Spectrum(1.f);
+	io_brdf.open("io_table_test.txt"); // opens the file
+	if (!io_brdf) { // file couldn't be opened
+		cerr << "Error: file could not be opened" << endl;
+		cout << "NO";
+		exit(1);
+	}
 
-	//Spherical Coordinates
-	float thetaIncoming;
-	float phiIncoming;
-	
-	float thetaOutgoing;
-	float phiOutgoing;
+	ofstream brdf_table; // io_brdf is like cin
 
-	//File to write
-	ofstream io_spherical_to_cartesian; // Here it is written Incoming,Outgoing and BRDF
-	ofstream brdf_file;					// Here it is written the BRDF values only
+	brdf_table.open("brdf_test.txt"); // opens the file
+	if (!brdf_table) { // file couldn't be opened
+		cerr << "Error: file could not be opened" << endl;
+		cout << "NO";
+		exit(1);
+	}
 
+	float ix;
+	float iy;
+	float iz;
 
-	if (freedom_degrees == 4){
-		// 4 degrees
-		
-		cout << "4 Freedom Degrees" << endl;
-		
-		io_spherical_to_cartesian.open("Incoming_Outgoing_Brdf_Table_4_Degrees.txt"); 
-		if (!io_spherical_to_cartesian) { // file couldn't be opened
-			cerr << "Error: file could not be opened" << endl;
-			cout << "NO";
-			exit(1);
-		}
-		
-		brdf_file.open("Brdf_Table_4_Degrees.txt"); 
-		if (!brdf_file) { // file couldn't be opened
-			cerr << "Error: file could not be opened" << endl;
-			cout << "NO";
-			exit(1);
-		}
-		
-		for (thetaIncoming = 0; thetaIncoming < PI; thetaIncoming += PI/32) {
-			for (phiIncoming = 0; phiIncoming < 2*PI; phiIncoming += 2*PI/32) {
-				for (thetaOutgoing = 0; thetaOutgoing < PI; thetaOutgoing += PI / 32) {
-					for (phiOutgoing = 0; phiOutgoing < 2 * PI; phiOutgoing += 2 * PI / 32) {
+	float ox;
+	float oy;
+	float oz;
+	//varia per ogni componente di incoming e outgoing
+	for ( ix = -1.f; ix <= 1.f; ix += 0.25) {
+		for ( iy = -1.f; iy <= 1.f; iy += 0.25) {
+			for ( iz = 0.f; iz <= 1.f; iz += 0.25) {
+				for ( ox = -1.f; ox <= 1.f; ox += 0.25) {
+					for ( oy = -1.f; oy <= 1.f; oy += 0.25) {
+						for (oz = 0.f; oz <= 1.f; oz += 0.25) {
+							
+							io_brdf << "Incoming: (";
+							io_brdf << ix;
+							io_brdf << ",";
+							io_brdf << iy;
+							io_brdf << ",";
+							io_brdf << iz;
+							io_brdf << ") - ";
+							io_brdf << "Outgoing: (";
+							io_brdf << ox;
+							io_brdf << ",";
+							io_brdf << oy;
+							io_brdf << ",";
+							io_brdf << oz;
+							io_brdf << ") ---> BRDF Value: ";
+							
+							vec3 incoming = vec3(ix, iy, iz);
+							vec3 outgoing = vec3(ox, oy, oz);
+							Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
+							
+							io_brdf << brdf.toString();
+							io_brdf << "\n";
 
-						float cosThetaIncoming = cos(thetaIncoming);
-						float sinThetaIncoming = std::sqrt(1 - std::pow(cosThetaIncoming, 2));
+							brdf_table << float(brdf[0]);
+							brdf_table << " ";
+							brdf_table << float(brdf[1]);
+							brdf_table << " ";
+							brdf_table << float(brdf[2]);
 
-						float sinPhiIncoming = std::sin(phiIncoming);
-						float cosPhiIncoming = std::cos(phiIncoming);
+							brdf_table << "\n";
 
-						float cosThetaOutgoing = cos(thetaOutgoing);
-						float sinThetaOutgoing = std::sqrt(1 - std::pow(cosThetaOutgoing, 2));
-
-						float sinPhiOutgoing = std::sin(phiOutgoing);
-						float cosPhiOutgoing = std::cos(phiOutgoing);
-
-						vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
-						vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
-
-						//Debug for checking the correct Conversion to Cartesian Coordinates
-						
-						//io_spherical_to_cartesian << "Spherical_In:(1,Theta: " << thetaIncoming <<
-						//	", Phi: " << phiIncoming << ")";
-						io_spherical_to_cartesian << "Incoming: (" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") - ";
-						//io_spherical_to_cartesian << "Spherical_Out:(1,Theta: " << thetaOutgoing <<
-						//	", Phi: " << phiOutgoing << ")";
-						io_spherical_to_cartesian << "Outgoing: (" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")" << endl;
-
-						Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
-
-						io_spherical_to_cartesian << "-----> BRDF Value: " << brdf.toString() << endl<<endl;
-						brdf_file << brdf.toString() << endl;
+						}
+						oz = 0.f;
 					}
-					phiOutgoing = 0;
+					oy = 0.f;
 				}
-				thetaOutgoing = 0;
+				oz = 0.f;
 			}
-			phiIncoming = 0;
+			iz = 0.f;
 		}
+		iy = 0.f;
 	}
-	else {
-		// 3 degrees
-		cout << "3 Freedom Degrees" << endl;
-		
-		io_spherical_to_cartesian.open("Incoming_Outgoing_Brdf_Table_3_Degrees.txt"); // opens the file
-		if (!io_spherical_to_cartesian) { // file couldn't be opened
-			cerr << "Error: file could not be opened" << endl;
-			cout << "NO";
-			exit(1);
-		}
-		
-		brdf_file.open("Brdf_Table_3_Degrees.txt"); // opens the file
-		if (!brdf_file) { // file couldn't be opened
-			cerr << "Error: file could not be opened" << endl;
-			cout << "NO";
-			exit(1);
-		}
-		
-		for (thetaIncoming = 0; thetaIncoming < PI; thetaIncoming += PI/32) {
-			for (phiIncoming = 0; phiIncoming < 2*PI; phiIncoming += 2*PI/32) {
-				for (thetaOutgoing = 0; thetaOutgoing < PI; thetaOutgoing += PI / 32) {
-					
-					phiOutgoing = 0;
-
-					float cosThetaIncoming = cos(thetaIncoming);
-					float sinThetaIncoming = std::sqrt(1 - std::pow(cosThetaIncoming, 2));
-
-					float sinPhiIncoming = std::sin(phiIncoming);
-					float cosPhiIncoming = std::cos(phiIncoming);
-
-					float cosThetaOutgoing = cos(thetaOutgoing);
-					float sinThetaOutgoing = std::sqrt(1 - std::pow(cosThetaOutgoing, 2));
-
-					float sinPhiOutgoing = std::sin(phiOutgoing);
-					float cosPhiOutgoing = std::cos(phiOutgoing);
-
-					vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
-					vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
-					
-					//Debug for checking the correct Conversion to Cartesian Coordinates
-
-					//io_spherical_to_cartesian << "Spherical_In:(1,Theta: " << thetaIncoming <<
-					//	", Phi: " << phiIncoming << ")";
-					io_spherical_to_cartesian << "Incoming: (" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") - ";
-					//io_spherical_to_cartesian << "Spherical_Out:(1,Theta: " << thetaOutgoing <<
-					//	", Phi: " << phiOutgoing << ")";
-					io_spherical_to_cartesian << "Outgoing: (" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")"<< endl;
-
-					Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
-
-					io_spherical_to_cartesian << "-----> BRDF Value: " << brdf.toString() << endl<<endl;
-					brdf_file << brdf.toString() << endl;
-					
-				}
-				thetaOutgoing = 0;
+	io_brdf.close();
+	brdf_table.close();
+    /*
+	cout << "\n";
+    cout << brdf2.toString();
+	cout << "\n";  
+	cout << "\n";
+    cout << brdf6.toString();
+	cout << "\n";
+	
+	
+	float eps_xy = 0.002;
+	float eps_z = 0.002;
+	float count_x = 0;
+	float count_y = 0;
+	float count_z = 0;
+	int count = 0;
+	for (int i = 0; i < 10; i++)
+		for(int j = 0; j < 10; j++ )
+			for (int z = 0; z < 5; z++) {
+				cout << "\n";
+				cout << count_x;
+				cout << ",";
+				cout << count_y;
+				cout << ",";
+				cout << count_z;
+				cout << "\n";
+				count_x += eps_xy;
+				count_y += eps_xy;
+				count_z += eps_z;
+				count++;
 			}
-			phiIncoming = 0;
-		}
-	}
-
-	io_spherical_to_cartesian.close();
-	brdf_file.close();
-	cout << "DONE!\n" << "Elapsed time: " << float(clock() - begin_time) / CLOCKS_PER_SEC << " seconds" << endl;
+	cout << "Numero di ripetizioni: ";
+	cout << count;
+	cout << "\n";
+	/*
+	Spectrum output2 = output + Spectrum(1.f);
+    cout << output2.toString()+"\n";
+    cout << "hello \n";
+    cout << Spectrum((0.0f,0.5f,1.f)).toString()+"\n";
+    cout << Spectrum(0.5f).toString()+"\n";
+    cout << Spectrum(1.f).toString()+"\n";
+	*/
+	
 }
 
