@@ -563,17 +563,17 @@ int main(int argc, char** argv) {
 
 						//Debug for checking the correct Conversion to Cartesian Coordinates
 						
-						//io_spherical_to_cartesian << "Spherical_In:(1,Theta: " << thetaIncoming <<
-						//	", Phi: " << phiIncoming << ")";
+						io_spherical_to_cartesian << "Spherical_In:(1,Theta: " << thetaIncoming <<
+							", Phi: " << phiIncoming << ")";
 						io_spherical_to_cartesian << "Incoming: (" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") - ";
-						//io_spherical_to_cartesian << "Spherical_Out:(1,Theta: " << thetaOutgoing <<
-						//	", Phi: " << phiOutgoing << ")";
+						io_spherical_to_cartesian << "Spherical_Out:(1,Theta: " << thetaOutgoing <<
+							", Phi: " << phiOutgoing << ")";
 						io_spherical_to_cartesian << "Outgoing: (" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")" << endl;
 
 						Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
 
 						io_spherical_to_cartesian << "-----> BRDF Value: " << brdf.toString() << endl<<endl;
-						brdf_file << brdf.toString() << endl;
+						brdf_file << brdf.toString() << endl<<endl;
 					}
 					phiOutgoing = 0;
 				}
@@ -621,19 +621,17 @@ int main(int argc, char** argv) {
 					vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
 					vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
 					
-					//Debug for checking the correct Conversion to Cartesian Coordinates
-
-					//io_spherical_to_cartesian << "Spherical_In:(1,Theta: " << thetaIncoming <<
-					//	", Phi: " << phiIncoming << ")";
+					io_spherical_to_cartesian << "Spherical_In:(1,Theta: " << thetaIncoming <<
+						", Phi: " << phiIncoming << ")";
 					io_spherical_to_cartesian << "Incoming: (" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") - ";
-					//io_spherical_to_cartesian << "Spherical_Out:(1,Theta: " << thetaOutgoing <<
-					//	", Phi: " << phiOutgoing << ")";
-					io_spherical_to_cartesian << "Outgoing: (" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")"<< endl;
+					io_spherical_to_cartesian << "Spherical_Out:(1,Theta: " << thetaOutgoing <<
+						", Phi: " << phiOutgoing << ")";
+					io_spherical_to_cartesian << "Outgoing: (" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")" << endl;
 
 					Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
 
-					io_spherical_to_cartesian << "-----> BRDF Value: " << brdf.toString() << endl<<endl;
-					brdf_file << brdf.toString() << endl;
+					io_spherical_to_cartesian << "-----> BRDF Value: " << brdf.toString() << endl << endl;
+					brdf_file << brdf.toString() << endl << endl;
 					
 				}
 				thetaOutgoing = 0;
