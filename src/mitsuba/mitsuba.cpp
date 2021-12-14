@@ -558,7 +558,7 @@ int main(int argc, char** argv) {
 			exit(1);
 		}
 
-		prova_file.open("provaprova.txt");
+		prova_file.open("debug4.txt");
 		if (!prova_file) { // file couldn't be opened
 			cerr << "Error: file could not be opened" << endl;
 			cout << "NO";
@@ -680,6 +680,12 @@ int main(int argc, char** argv) {
 			cout << "NO";
 			exit(1);
 		}
+		prova_file.open("debug3.txt");
+		if (!prova_file) { // file couldn't be opened
+			cerr << "Error: file could not be opened" << endl;
+			cout << "NO";
+			exit(1);
+		}
 		/*
 		for (thetaIncoming = 0; thetaIncoming < PI/2; thetaIncoming += PI/32) {
 			for (phiIncoming = 0; phiIncoming < 2*PI; phiIncoming += 2*PI/32) {
@@ -754,7 +760,12 @@ int main(int argc, char** argv) {
 
 					io_spherical_to_cartesian << "---> BRDF Value: " << brdf.toString() << endl;
 					brdf_file << brdf[0] << " " << brdf[1] << " " << brdf[2] << endl;
-					
+
+					prova_file << "phiOutgoing: " << phiOutgoing << endl;
+					prova_file << "thetaOutgoing: " << thetaOutgoing << endl;
+					prova_file << "phiIncoming: " << phiIncoming << endl;
+					prova_file << "thetaIncoming: " << thetaIncoming << endl << endl;
+
 					thetaOutgoing += PI / 64;
 					count++;
 				}
