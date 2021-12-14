@@ -64,6 +64,7 @@ using std::ofstream;
 #include <cstdlib> // for exit function
 #include <time.h>
 # define PI 3.14159265358979323846
+#include <cstdlib>
 
 //#include "../src/bsdfs/roughGGX.h"
 using XERCES_CPP_NAMESPACE::SAXParser;
@@ -498,9 +499,23 @@ vec3 sample_conductor(const vec3& wi, const float alpha_x, const float alpha_y, 
 
 
 int main(int argc, char** argv) {
-	
+	/*
+	cout << "You have entered " << argc
+		<< " arguments:" << "\n";
+
+	for (int i = 0; i < argc; ++i)
+		cout << argv[i] << "\n";
+		*/
+
+	if (argc < 2) {
+		cout << "Inserire gradi di liberta', 3 o 4" << endl;
+		return 0;
+	}
+	else {
+		cout << "You entered " << atoi(argv[1]) << endl;
+	}
 	//Modify this
-	int freedom_degrees = 3;
+	int freedom_degrees = atoi(argv[1]);
 
 	const clock_t begin_time = clock();
 	cout << "Mitsuba is executing, please wait...\n";
@@ -541,9 +556,9 @@ int main(int argc, char** argv) {
 			exit(1);
 		}
 		
-		for (thetaIncoming = 0; thetaIncoming < PI; thetaIncoming += PI/32) {
+		for (thetaIncoming = 0; thetaIncoming < PI/2; thetaIncoming += PI/32) {
 			for (phiIncoming = 0; phiIncoming < 2*PI; phiIncoming += 2*PI/32) {
-				for (thetaOutgoing = 0; thetaOutgoing < PI; thetaOutgoing += PI / 32) {
+				for (thetaOutgoing = 0; thetaOutgoing < PI/2; thetaOutgoing += PI / 32) {
 					for (phiOutgoing = 0; phiOutgoing < 2 * PI; phiOutgoing += 2 * PI / 32) {
 
 						float cosThetaIncoming = cos(thetaIncoming);
@@ -601,9 +616,9 @@ int main(int argc, char** argv) {
 			exit(1);
 		}
 		
-		for (thetaIncoming = 0; thetaIncoming < PI; thetaIncoming += PI/32) {
+		for (thetaIncoming = 0; thetaIncoming < PI/2; thetaIncoming += PI/32) {
 			for (phiIncoming = 0; phiIncoming < 2*PI; phiIncoming += 2*PI/32) {
-				for (thetaOutgoing = 0; thetaOutgoing < PI; thetaOutgoing += PI / 32) {
+				for (thetaOutgoing = 0; thetaOutgoing < PI/2; thetaOutgoing += PI / 32) {
 					
 					phiOutgoing = 0;
 
