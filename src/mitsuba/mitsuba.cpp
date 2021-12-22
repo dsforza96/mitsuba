@@ -499,23 +499,8 @@ vec3 sample_conductor(const vec3& wi, const float alpha_x, const float alpha_y, 
 
 
 int main(int argc, char** argv) {
-	/*
-	cout << "You have entered " << argc
-		<< " arguments:" << "\n";
 
-	for (int i = 0; i < argc; ++i)
-		cout << argv[i] << "\n";
-		*/
-
-	if (argc < 2) {
-		cout << "Inserire gradi di liberta', 3 o 4" << endl;
-		return 0;
-	}
-	else {
-		cout << "You entered " << atoi(argv[1]) << endl;
-	}
 	//Modify this
-	int freedom_degrees = atoi(argv[1]);
 
 	const clock_t begin_time = clock();
 	cout << "Mitsuba is executing, please wait...\n";
@@ -525,257 +510,94 @@ int main(int argc, char** argv) {
 	Spectrum m_eta = Spectrum(0.f);
 	Spectrum m_k = Spectrum(1.f);
 
-	//Spherical Coordinates
-	float thetaIncoming = 0;
-	float phiIncoming = 0;
-	
-	float thetaOutgoing = 0;
-	float phiOutgoing = 0;
-
 	//File to write
 	ofstream io_spherical_to_cartesian; // Here it is written Incoming,Outgoing and BRDF
 	ofstream brdf_file;					// Here it is written the BRDF values only
-	ofstream prova_file;					// Here it is written the BRDF values only
+	ofstream prova_file;				// Here it is written the BRDF values only
 
+	// 3 degrees
+	cout << "3 Freedom Degrees" << endl;
+		
+	io_spherical_to_cartesian.open("Incoming_Outgoing_Brdf_Table_3_Degrees.txt"); // opens the file
+	if (!io_spherical_to_cartesian) { // file couldn't be opened
+		cerr << "Error: file could not be opened" << endl;
+		cout << "NO";
+		exit(1);
+	}
+		
+	brdf_file.open("Brdf_Table_3_DegreesThetaOutgoingFIXED.txt"); // opens the file
+	if (!brdf_file) { // file couldn't be opened
+		cerr << "Error: file could not be opened" << endl;
+		cout << "NO";
+		exit(1);
+	}
+	prova_file.open("debug3.txt");
+	if (!prova_file) { // file couldn't be opened
+		cerr << "Error: file could not be opened" << endl;
+		cout << "NO";
+		exit(1);
+	}
+	//Spherical Coordinates
+	
+	//This is fixed due to isotropic assumption
+	float phiOutgoing = 0;
+	
+	float phiRange[32];
+	float thetaRange[32];
+
+	for (int i = 0; i < 32; i++) {
+		phiRange[i] = (2 * PI) * i / 31;
+		thetaRange[i] = (PI / 2) * i / 31;
+	}
+	
 	int count = 0;
 
-	if (freedom_degrees == 4){
-		// 4 degrees
-		
-		cout << "4 Freedom Degrees" << endl;
-		
-		io_spherical_to_cartesian.open("Incoming_Outgoing_Brdf_Table_4_Degrees.txt"); 
-		if (!io_spherical_to_cartesian) { // file couldn't be opened
-			cerr << "Error: file could not be opened" << endl;
-			cout << "NO";
-			exit(1);
-		}
-		
-		brdf_file.open("Brdf_Table_4_Degrees.txt"); 
-		if (!brdf_file) { // file couldn't be opened
-			cerr << "Error: file could not be opened" << endl;
-			cout << "NO";
-			exit(1);
-		}
+	for (float phiIncoming : phiRange) {
+		for (float thetaIncoming : thetaRange) {
+			for (float thetaOutgoing : thetaRange) {
 
-		prova_file.open("debug4.txt");
-		if (!prova_file) { // file couldn't be opened
-			cerr << "Error: file could not be opened" << endl;
-			cout << "NO";
-			exit(1);
-		}
-		
-		/*
-		for (thetaIncoming = 0; thetaIncoming < PI/2; thetaIncoming += PI/64) {
-			for (phiIncoming = 0; phiIncoming < 2*PI; phiIncoming += 2*PI/32) {
-				for (thetaOutgoing = 0; thetaOutgoing < PI/2; thetaOutgoing += PI / 64) {
-					for (phiOutgoing = 0; phiOutgoing < 2 * PI; phiOutgoing += 2 * PI / 32) {
+				//Debug per scoprire gli assi
+				//phiIncoming = 0.5;
+				//thetaIncoming = 0.5;
+				//thetaOutgoing = 0.5;
+				float cosThetaIncoming = cos(thetaIncoming);
+				float sinThetaIncoming = std::sqrt(1 - std::pow(cosThetaIncoming, 2));
 
-						float cosThetaIncoming = cos(thetaIncoming);
-						float sinThetaIncoming = std::sqrt(1 - std::pow(cosThetaIncoming, 2));
+				float sinPhiIncoming = std::sin(phiIncoming);
+				float cosPhiIncoming = std::cos(phiIncoming);
 
-						float sinPhiIncoming = std::sin(phiIncoming);
-						float cosPhiIncoming = std::cos(phiIncoming);
+				float cosThetaOutgoing = cos(thetaOutgoing);
+				float sinThetaOutgoing = std::sqrt(1 - std::pow(cosThetaOutgoing, 2));
 
-						float cosThetaOutgoing = cos(thetaOutgoing);
-						float sinThetaOutgoing = std::sqrt(1 - std::pow(cosThetaOutgoing, 2));
+				float sinPhiOutgoing = std::sin(phiOutgoing);
+				float cosPhiOutgoing = std::cos(phiOutgoing);
 
-						float sinPhiOutgoing = std::sin(phiOutgoing);
-						float cosPhiOutgoing = std::cos(phiOutgoing);
 
-						vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
-						vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
+				vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
+				vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
 
-						//Debug for checking the correct Conversion to Cartesian Coordinates
-						
-						io_spherical_to_cartesian << "Incoming = ";
-						io_spherical_to_cartesian << "Spher:(1," << thetaIncoming << "," << phiIncoming << ")";
-						io_spherical_to_cartesian << "Cart:(" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") ";
-						io_spherical_to_cartesian << "Outgoing = ";
-						io_spherical_to_cartesian << "Spher:(1," << thetaOutgoing << "," << phiOutgoing << ")";
+				io_spherical_to_cartesian << "Incoming = ";
+				io_spherical_to_cartesian << "Spher:(1," << thetaIncoming << "," << phiIncoming << ")";
+				io_spherical_to_cartesian << "Cart:(" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") ";
+				io_spherical_to_cartesian << "Outgoing = ";
+				io_spherical_to_cartesian << "Spher:(1," << thetaOutgoing << "," << phiOutgoing << ")";
 
-						io_spherical_to_cartesian << "Cart:(" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")";
+				io_spherical_to_cartesian << "Cart:(" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")";
 
-						Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
+				Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
 
-						io_spherical_to_cartesian << "---> BRDF Value: " << brdf.toString() << endl;
-						brdf_file << brdf[0] << " " << brdf[1] << " " << brdf[2] << endl;
-					}
-					phiOutgoing = 0;
-				}
-				thetaOutgoing = 0;
+				io_spherical_to_cartesian << "---> BRDF Value: " << brdf.toString() << endl;
+				brdf_file << brdf[0] << " " << brdf[1] << " " << brdf[2] << endl;
+
+				
+				prova_file << "phiIncoming: " << phiIncoming << endl;
+				prova_file << "thetaIncoming: " << thetaIncoming << endl;
+				prova_file << "thetaOutgoing: " << thetaOutgoing << endl << endl;
+				count++;
 			}
-			phiIncoming = 0;
-		}
-		*/
-		for (int i = 0; i < 33; i++) {
-			for (int j = 0; j < 33; j++) {
-				for (int x = 0; x < 33; x++) {
-					for (int w = 0; w < 33; w++) {
-
-						float cosThetaIncoming = cos(thetaIncoming);
-						float sinThetaIncoming = std::sqrt(1 - std::pow(cosThetaIncoming, 2));
-
-						float sinPhiIncoming = std::sin(phiIncoming);
-						float cosPhiIncoming = std::cos(phiIncoming);
-
-						float cosThetaOutgoing = cos(thetaOutgoing);
-						float sinThetaOutgoing = std::sqrt(1 - std::pow(cosThetaOutgoing, 2));
-
-						float sinPhiOutgoing = std::sin(phiOutgoing);
-						float cosPhiOutgoing = std::cos(phiOutgoing);
-
-						vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
-						vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
-
-						//Debug for checking the correct Conversion to Cartesian Coordinates
-
-						io_spherical_to_cartesian << "Incoming = ";
-						io_spherical_to_cartesian << "Spher:(1," << thetaIncoming << "," << phiIncoming << ")";
-						io_spherical_to_cartesian << "Cart:(" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") ";
-						io_spherical_to_cartesian << "Outgoing = ";
-						io_spherical_to_cartesian << "Spher:(1," << thetaOutgoing << "," << phiOutgoing << ")";
-
-						io_spherical_to_cartesian << "Cart:(" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")";
-
-						Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
-
-						io_spherical_to_cartesian << "---> BRDF Value: " << brdf.toString() << endl;
-						brdf_file << brdf[0] << " " << brdf[1] << " " << brdf[2] << endl;
-
-						prova_file << "phiOutgoing: " << phiOutgoing<<endl;
-						prova_file << "thetaOutgoing: " << thetaOutgoing <<endl;
-						prova_file << "phiIncoming: " << phiIncoming <<endl;
-						prova_file << "thetaIncoming: " << thetaIncoming << endl << endl;
-
-						phiOutgoing += PI / 16;
-						count++;
-
-					}
-					phiOutgoing = 0;
-					thetaOutgoing += PI / 64;
-				}
-				thetaOutgoing = 0;
-				phiIncoming += PI / 16;
-			}
-			phiIncoming = 0;
-			thetaIncoming += PI / 64;
-		}
-
-	}
-	else {
-		// 3 degrees
-		cout << "3 Freedom Degrees" << endl;
-		
-		io_spherical_to_cartesian.open("Incoming_Outgoing_Brdf_Table_3_Degrees.txt"); // opens the file
-		if (!io_spherical_to_cartesian) { // file couldn't be opened
-			cerr << "Error: file could not be opened" << endl;
-			cout << "NO";
-			exit(1);
-		}
-		
-		brdf_file.open("Brdf_Table_3_Degrees.txt"); // opens the file
-		if (!brdf_file) { // file couldn't be opened
-			cerr << "Error: file could not be opened" << endl;
-			cout << "NO";
-			exit(1);
-		}
-		prova_file.open("debug3.txt");
-		if (!prova_file) { // file couldn't be opened
-			cerr << "Error: file could not be opened" << endl;
-			cout << "NO";
-			exit(1);
-		}
-		/*
-		for (thetaIncoming = 0; thetaIncoming < PI/2; thetaIncoming += PI/32) {
-			for (phiIncoming = 0; phiIncoming < 2*PI; phiIncoming += 2*PI/32) {
-				for (thetaOutgoing = 0; thetaOutgoing < PI/2; thetaOutgoing += PI / 32) {
-					
-					phiOutgoing = 0;
-
-					float cosThetaIncoming = cos(thetaIncoming);
-					float sinThetaIncoming = std::sqrt(1 - std::pow(cosThetaIncoming, 2));
-
-					float sinPhiIncoming = std::sin(phiIncoming);
-					float cosPhiIncoming = std::cos(phiIncoming);
-
-					float cosThetaOutgoing = cos(thetaOutgoing);
-					float sinThetaOutgoing = std::sqrt(1 - std::pow(cosThetaOutgoing, 2));
-
-					float sinPhiOutgoing = std::sin(phiOutgoing);
-					float cosPhiOutgoing = std::cos(phiOutgoing);
-
-					vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
-					vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
-					
-					io_spherical_to_cartesian << "Incoming = ";
-					io_spherical_to_cartesian << "Spher:(1,"<<thetaIncoming<< "," << phiIncoming << ")";
-					io_spherical_to_cartesian << "Cart:("<< incoming[0] << "," << incoming[1] << "," << incoming[2] << ") ";
-					io_spherical_to_cartesian << "Outgoing = ";
-					io_spherical_to_cartesian << "Spher:(1," << thetaOutgoing<< "," << phiOutgoing << ")";
-					
-					io_spherical_to_cartesian << "Cart:(" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")";
-
-					Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
-
-					io_spherical_to_cartesian << "---> BRDF Value: " << brdf.toString() << endl;
-					brdf_file << brdf[0] << " " << brdf[1] << " " << brdf[2] << endl;
-					
-				}
-				thetaOutgoing = 0;
-			}
-			phiIncoming = 0;
-		}
-		*/
-		for (int i = 0; i < 33; i++) {
-			for (int j = 0; j < 33; j++) {
-				for (int x = 0; x < 33; x++) {
-
-					phiOutgoing = 0;
-
-					float cosThetaIncoming = cos(thetaIncoming);
-					float sinThetaIncoming = std::sqrt(1 - std::pow(cosThetaIncoming, 2));
-
-					float sinPhiIncoming = std::sin(phiIncoming);
-					float cosPhiIncoming = std::cos(phiIncoming);
-
-					float cosThetaOutgoing = cos(thetaOutgoing);
-					float sinThetaOutgoing = std::sqrt(1 - std::pow(cosThetaOutgoing, 2));
-
-					float sinPhiOutgoing = std::sin(phiOutgoing);
-					float cosPhiOutgoing = std::cos(phiOutgoing);
-
-					vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
-					vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
-
-					io_spherical_to_cartesian << "Incoming = ";
-					io_spherical_to_cartesian << "Spher:(1," << thetaIncoming << "," << phiIncoming << ")";
-					io_spherical_to_cartesian << "Cart:(" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") ";
-					io_spherical_to_cartesian << "Outgoing = ";
-					io_spherical_to_cartesian << "Spher:(1," << thetaOutgoing << "," << phiOutgoing << ")";
-
-					io_spherical_to_cartesian << "Cart:(" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")";
-
-					Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
-
-					io_spherical_to_cartesian << "---> BRDF Value: " << brdf.toString() << endl;
-					brdf_file << brdf[0] << " " << brdf[1] << " " << brdf[2] << endl;
-
-					prova_file << "phiOutgoing: " << phiOutgoing << endl;
-					prova_file << "thetaOutgoing: " << thetaOutgoing << endl;
-					prova_file << "phiIncoming: " << phiIncoming << endl;
-					prova_file << "thetaIncoming: " << thetaIncoming << endl << endl;
-
-					thetaOutgoing += PI / 64;
-					count++;
-				}
-				thetaOutgoing = 0;
-				phiIncoming += PI / 16;
-			}
-			phiIncoming = 0;
-			thetaIncoming += PI / 64;
 		}
 	}
+
 
 	cout << "I have written " << count <<" rows" << endl;
 	io_spherical_to_cartesian.close();
