@@ -288,6 +288,14 @@ vec3 sampleVNDF(const vec3& wi, const float alpha_x, const float alpha_y)
 	const float phi = atan2(wi_11.y, wi_11.x);
 	vec2 slope(cosf(phi) * slope_11.x - sinf(phi) * slope_11.y, sinf(phi) * slope_11.x + cos(phi) * slope_11.y, 0);
 
+
+	cout << "Primo parametro free: " << cosf(phi) * slope_11.x - sinf(phi) * slope_11.y;
+	cout << "Secondo parametro free: " << sinf(phi) * slope_11.x + cos(phi) * slope_11.y;
+
+	cout << "Primo parametro Slope: " << slope.x;
+	cout << "Secondo parametro Slope: " << slope.y;
+
+
 	// stretch back
 	slope.x *= alpha_x;
 	slope.y *= alpha_y;
@@ -320,6 +328,8 @@ vec3 samplePhaseFunction_conductor(const vec3& wi, const float alpha_x, const fl
 	// align with view direction
 	const float phi = atan2(wi_11.y, wi_11.x);
 	vec2 slope(cosf(phi) * slope_11.x - sinf(phi) * slope_11.y, sinf(phi) * slope_11.x + cos(phi) * slope_11.y, 0);
+
+	//cout << "Slope Before: " << slope.toString() << " Slope After: 1) " << slope.x << " 2) " << slope.y <<" 3) " << slope.z << endl;
 
 	// stretch back
 	slope.x *= alpha_x;
@@ -392,6 +402,7 @@ Spectrum eval_conductor(const vec3& wi, const vec3& wo, const float alpha_x, con
 	// eval single scattering	
 	// half-vector
 	const vec3 wh = normalize(wi + wo);
+	//cout << "Valore wh: " << (wh).toString() << endl<<endl;
 	const float D = D_ggx(wh, alpha_x, alpha_y);
 	const float G2 = 1.0f / (1.0f + (-ray.Lambda - 1.0f) + ray_shadowing.Lambda);
 	Spectrum singleScattering = fresnelConductorExact(dot(-ray.w, wh), m_eta, m_k) * D * G2 / (4.0f * wi.z);
@@ -497,42 +508,32 @@ vec3 sample_conductor(const vec3& wi, const float alpha_x, const float alpha_y, 
 	return ray.w;
 }
 
-
 int main(int argc, char** argv) {
-
-	//Modify this
 
 	const clock_t begin_time = clock();
 	cout << "Mitsuba is executing, please wait...\n";
+
+	// 3 degrees
+	cout << "3 Freedom Degrees and Roughness" << endl;
 	
 	//BRDF Parameters
-	float isotropic_roughness = 0.2f;
 	Spectrum m_eta = Spectrum(0.f);
 	Spectrum m_k = Spectrum(1.f);
 
 	//File to write
-	ofstream io_spherical_to_cartesian; // Here it is written Incoming,Outgoing and BRDF
-	ofstream brdf_file;					// Here it is written the BRDF values only
-	ofstream prova_file;				// Here it is written the BRDF values only
+	ofstream brdf_complete;      // Here it is written Incoming,Outgoing and BRDF
+	ofstream brdf_tab;			 // Here it is written the BRDF values only
 
-	// 3 degrees
-	cout << "3 Freedom Degrees" << endl;
-		
-	io_spherical_to_cartesian.open("Incoming_Outgoing_Brdf_Table_3_Degrees.txt"); // opens the file
-	if (!io_spherical_to_cartesian) { // file couldn't be opened
+	brdf_complete.open("Res3/brdf_complete_64_NO_ROUGHNESS.txt"); // opens the file
+	if (!brdf_complete) { // file couldn't be opened
 		cerr << "Error: file could not be opened" << endl;
 		cout << "NO";
 		exit(1);
 	}
 		
-	brdf_file.open("Brdf_Table_3_DegreesThetaOutgoingFIXED.txt"); // opens the file
-	if (!brdf_file) { // file couldn't be opened
-		cerr << "Error: file could not be opened" << endl;
-		cout << "NO";
-		exit(1);
-	}
-	prova_file.open("debug3.txt");
-	if (!prova_file) { // file couldn't be opened
+	//brdf_file.open("NoMultipleScattering/NOMSBrdf_Table_3_Degrees_R1.txt"); // opens the file
+	brdf_tab.open("Res3/brdf_tab_64_NO_ROUGHNESS.csv"); // opens the file
+	if (!brdf_tab) { // file couldn't be opened
 		cerr << "Error: file could not be opened" << endl;
 		cout << "NO";
 		exit(1);
@@ -541,67 +542,88 @@ int main(int argc, char** argv) {
 	
 	//This is fixed due to isotropic assumption
 	float phiOutgoing = 0;
-	
-	float phiRange[32];
-	float thetaRange[32];
+	float sinPhiOutgoing = 0;
+	float cosPhiOutgoing = 1;
 
-	for (int i = 0; i < 32; i++) {
-		phiRange[i] = (2 * PI) * i / 31;
-		thetaRange[i] = (PI / 2) * i / 31;
+	const int N = 64;
+
+	float phiRange[N];
+	float thetaRange[N];
+	float roughnessRange[N];
+
+	float min_roughness = 0.001f;
+
+	for (int i = 0; i < N; i++) {
+		phiRange[i] = (2 * PI) * i / (N - 1);
+		thetaRange[i] = (PI / 2) * i / (N - 1);
+		if (i == 0) {  //avoid singularities
+			roughnessRange[i] = min_roughness;
+		}
+		else {
+			roughnessRange[i] = i / float(N - 1);
+		}
 	}
 	
+	int i;
+	for (i = 0; i < N; i++) {
+		printf("%d\n", i);
+		printf("PHI: %f\n", phiRange[i]);
+		printf("THETA: %f\n", thetaRange[i]);
+		printf("ROUGHNESS: %f\n", roughnessRange[i]);
+		cout << " ***"<< "\n";
+	}
+	printf("%d\n", i);
+	
+
 	int count = 0;
 
 	for (float phiIncoming : phiRange) {
 		for (float thetaIncoming : thetaRange) {
 			for (float thetaOutgoing : thetaRange) {
+				//for (float roughness : roughnessRange) {
+				float roughness = 0.5;
+					float sinPhiIncoming = std::sin(phiIncoming);
+					float cosPhiIncoming = std::cos(phiIncoming);
 
-				//Debug per scoprire gli assi
-				//phiIncoming = 0.5;
-				//thetaIncoming = 0.5;
-				//thetaOutgoing = 0.5;
-				float cosThetaIncoming = cos(thetaIncoming);
-				float sinThetaIncoming = std::sqrt(1 - std::pow(cosThetaIncoming, 2));
+					float cosThetaIncoming = cos(thetaIncoming);
+					float sinThetaIncoming = std::sin(thetaIncoming);
+					
+					float cosThetaOutgoing = cos(thetaOutgoing);
+					float sinThetaOutgoing = std::sin(thetaOutgoing);
 
-				float sinPhiIncoming = std::sin(phiIncoming);
-				float cosPhiIncoming = std::cos(phiIncoming);
+					/*
+					vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
+					vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
+					*/
+					vec3 incoming = vec3(sinPhiIncoming * cosThetaIncoming, sinThetaIncoming * sinPhiIncoming, cosPhiIncoming);
+					vec3 outgoing = vec3(sinPhiOutgoing * cosThetaOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosPhiOutgoing);
+					
+					brdf_complete << "Incoming = ";
+					brdf_complete << "Spher: " << "\n";
+					brdf_complete << "PhiIncoming: " << phiIncoming << "\n";
+					brdf_complete << "ThetaIncoming: " << thetaIncoming << "\n";
+					brdf_complete << "ThetaOutgoing: " << thetaOutgoing << "\n";
+					brdf_complete << "Roughness: " << roughness << "\n";
+					brdf_complete << "Cart:(" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") " << "\n";
+					brdf_complete << "Outgoing = ";
+					brdf_complete << "Spher:(1," << thetaOutgoing << "," << phiOutgoing << ")";
+					brdf_complete << "Cart:(" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")\n";
+					
+					Spectrum brdf = eval_conductor(incoming, outgoing, roughness, roughness, m_eta, m_k, 10);
 
-				float cosThetaOutgoing = cos(thetaOutgoing);
-				float sinThetaOutgoing = std::sqrt(1 - std::pow(cosThetaOutgoing, 2));
+					brdf_complete << "---> BRDF Value: " << brdf[0] << "\n" << "******" << "\n";
+					brdf_tab << brdf[0] << "," << endl;
 
-				float sinPhiOutgoing = std::sin(phiOutgoing);
-				float cosPhiOutgoing = std::cos(phiOutgoing);
-
-
-				vec3 incoming = vec3(sinThetaIncoming * cosPhiIncoming, sinThetaIncoming * sinPhiIncoming, cosThetaIncoming);
-				vec3 outgoing = vec3(sinThetaOutgoing * cosPhiOutgoing, sinThetaOutgoing * sinPhiOutgoing, cosThetaOutgoing);
-
-				io_spherical_to_cartesian << "Incoming = ";
-				io_spherical_to_cartesian << "Spher:(1," << thetaIncoming << "," << phiIncoming << ")";
-				io_spherical_to_cartesian << "Cart:(" << incoming[0] << "," << incoming[1] << "," << incoming[2] << ") ";
-				io_spherical_to_cartesian << "Outgoing = ";
-				io_spherical_to_cartesian << "Spher:(1," << thetaOutgoing << "," << phiOutgoing << ")";
-
-				io_spherical_to_cartesian << "Cart:(" << outgoing[0] << "," << outgoing[1] << "," << outgoing[2] << ")";
-
-				Spectrum brdf = eval_conductor(incoming, outgoing, isotropic_roughness, isotropic_roughness, m_eta, m_k, 10);
-
-				io_spherical_to_cartesian << "---> BRDF Value: " << brdf.toString() << endl;
-				brdf_file << brdf[0] << " " << brdf[1] << " " << brdf[2] << endl;
-
-				
-				prova_file << "phiIncoming: " << phiIncoming << endl;
-				prova_file << "thetaIncoming: " << thetaIncoming << endl;
-				prova_file << "thetaOutgoing: " << thetaOutgoing << endl << endl;
-				count++;
+					count++;
+				//}
 			}
 		}
 	}
 
-
 	cout << "I have written " << count <<" rows" << endl;
-	io_spherical_to_cartesian.close();
-	brdf_file.close();
+	brdf_complete.close();
+	brdf_tab.close();
 	cout << "DONE!\n" << "Elapsed time: " << float(clock() - begin_time) / CLOCKS_PER_SEC << " seconds" << endl;
+	cout << "DONE!\n" << "Elapsed time: " << (float(clock() - begin_time) / CLOCKS_PER_SEC)/60 << " minutes" << endl;
 }
 
